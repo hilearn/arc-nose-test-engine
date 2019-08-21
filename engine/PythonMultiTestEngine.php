@@ -26,11 +26,14 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         if ($this->getRunAllTests()) {
             $all_tests = array();
             foreach ($roots as $root => $testers) {
-
-                $all_tests[$root] = glob(Filesystem::resolvePath("$root/tests/**/test_*.py"));
-
+                if (in_array("tests/", $testers)) {
+                    $all_tests[$root]["nosetests"] = glob(Filesystem::resolvePath("$root/tests/**/test_*.py"));
+                }
+                if (in_array("doctests", $testers)) {
+                    $all_tests[$root]["doctests"] = glob(Filesystem::resolvePath("$root/**/*.py"));
+                }
             }
-            return $this->runRootTests($all_tests, $roots);
+            return $this->runTestsWithDifferentEngines($all_tests);
         }
 
         $paths = $this->getPaths();
@@ -55,36 +58,48 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
                 $directory = dirname($path);
 
                 foreach ($roots as $root => $testers) {
-                    $p = strpos($path, $root);
-                    if ( strpos($path, $root) === 0) {
-                        $rel_dir = substr($directory, strlen($root));
-                        $test_path = $root . '/tests' . $rel_dir . '/test_' . $filename;
-                        $absolute_test_path = Filesystem::resolvePath($test_path);
+                    if (in_array("nosetests", $testers)) {
+                        $p = strpos($path, $root);
+                        if ( strpos($path, $root) === 0) {
+                            $rel_dir = substr($directory, strlen($root));
+                            $test_path = $root . '/tests' . $rel_dir . '/test_' . $filename;
+                            $absolute_test_path = Filesystem::resolvePath($test_path);
 
-                        if (is_readable($absolute_test_path)) {
-                            $affected_tests[$root][] = $absolute_test_path;
+                            if (is_readable($absolute_test_path)) {
+                                $affected_tests[$root]["nosetests"][] = $absolute_test_path;
+                            }
+                            break;
                         }
-                        break;
                     }
-                    
+                    if (in_array("doctests", $testers)) {
+                        if(substr($path, -3) == '.py') {
+                            $affected_tests[$root]["doctests"][] = $absolute_path;
+                        }
+                    }
                 }
             }
         }
 
-        return $this->runRootTests($affected_tests, $roots);
+        return $this->runTestsWithDifferentEngines($affected_tests, $roots);
 
     }
 
-    private function runRootTests($test_paths, $root_config) {
+    private function runTestsWithDifferentEngines($test_paths) {
         $all_results = array();
         foreach ($test_paths as $root => $tests) {
-            $results = $this->runTests($tests, $root);
-            $all_results = array_merge($all_results, $results);
+            foreach ($tests as $runner => $paths) {
+                $results = $this->runTests($paths, $root, $runner);
+                // print(">> $runner\n");
+                // foreach ($paths as $p) {
+                //     print("$p\n");
+                // }
+                $all_results = array_merge($all_results, $results);
+            }
         }
         return $all_results;
     }
 
-    public function runTests($test_paths, $source_path)
+    public function runTests($test_paths, $source_path, $runner)
     {
         if (empty($test_paths)) {
             return array();
@@ -99,7 +114,19 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
             $xunit_tmp = new TempFile();
             $cover_tmp = new TempFile();
 
-            $future = $this->buildNoseTestFuture($test_path, $xunit_tmp, $cover_tmp, $source_path);
+            switch ($runner) {
+                case 'nosetests':
+                    $future = $this->buildNoseTestFuture($test_path, $xunit_tmp, $cover_tmp, $source_path);
+                    break;
+                case 'py.test':
+                case 'pytest':
+                    break;
+                case 'doctests':
+                    $future = $this->buildDoctestsFuture($test_path, $xunit_tmp, $cover_tmp, $source_path);
+                    break;
+                default:
+                    $future = null;
+            }
 
             $futures[$test_path] = $future;
             $tmpfiles[$test_path] = array(
@@ -114,7 +141,10 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
             try {
                 list($stdout, $stderr) = $future->resolvex();
             } catch (CommandException $exc) {
-                if ($exc->getError() > 1) {
+                if ($exc->getError() == 5) {
+                    // 'pytest' return 5 when no tests were run.
+                    continue;
+                } elseif ($exc->getError() > 1) {
                     // 'nose' returns 1 when tests are failing/broken.
                     throw $exc;
                 }
@@ -131,6 +161,16 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         }
 
         return array_mergev($results);
+    }
+    public function buildDoctestsFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
+    {
+        $cmd_line = csprintf("PYTHONPATH=$cover_package pytest --junit-xml=%s ", $xunit_tmp);
+
+        if ($this->getEnableCoverage() !== false) {
+            $cmd_line .= csprintf('--cov-report xml:%s --cov=%s', $cover_tmp, $cover_package);
+        }
+
+        return new ExecFuture('%C --doctest-modules %s', $cmd_line, $path);
     }
 
     public function buildNoseTestFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
