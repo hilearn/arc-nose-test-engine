@@ -42,7 +42,6 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         $affected_tests = array();
 
         foreach ($paths as $path) {
-            print("path     $path\n");
             $absolute_path = Filesystem::resolvePath($path);
 
             if (is_dir($absolute_path)) {
@@ -54,25 +53,20 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
             }
 
             if (is_readable($absolute_path)) {
-                print("readable\n");
                 $path_resolved = false;
 
                 $filename = basename($path);
                 $directory = dirname($path);
 
                 foreach ($roots as $root => $testers) {
-                    print("root '$root'\n");
                     if ( $root == "." || strpos($path, $root) === 0) {
-                        print("z\n");
                         foreach ($testers as $test_loc) {
                             if ( $test_loc == "doctests" ) {
                                 if(substr($path, -3) == '.py') {
                                     $affected_tests[$root]["doctests"][] = $absolute_path;
                                 }
                             } else {
-                                print("$root ... $test_loc ... $path\n");
                                 $rel_dir = ($root !== "." ? substr($directory, strlen($root)) : $directory);
-                                print("rel_dir  $rel_dir\n");
                   
                                 $test_path = $test_loc . $rel_dir . '/test_' . $filename;
 
