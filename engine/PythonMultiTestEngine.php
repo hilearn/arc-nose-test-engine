@@ -165,7 +165,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
 
     public function buildDoctestsFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
     {
-        $cmd_line = csprintf("pytest --junit-xml=%s ", $xunit_tmp);
+        $cmd_line = csprintf("PYTHONPATH='.' pytest --junit-xml=%s ", $xunit_tmp);
 
         if ($this->getEnableCoverage() !== false) {
             $cmd_line .= csprintf('--cov-report xml:%s --cov=%s', $cover_tmp, $cover_package);
@@ -176,7 +176,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
 
     public function buildPytestFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
     {
-        $cmd_line = csprintf("pytest --junit-xml=%s ", $xunit_tmp);
+        $cmd_line = csprintf("PYTHONPATH='.' pytest --junit-xml=%s ", $xunit_tmp);
 
         $root = $this->getWorkingCopy()->getProjectRoot();
         $coveragerc = $root . "/.coveragerc";
