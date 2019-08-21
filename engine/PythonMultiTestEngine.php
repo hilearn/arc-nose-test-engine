@@ -30,7 +30,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
                     if ( $test_loc == "doctests" ) {
                         $all_tests[$root]["doctests"] = glob(Filesystem::resolvePath("$root/**/*.py"));
                     } else {
-                        $all_tests[$root]["nosetests"] = glob(Filesystem::resolvePath("$test_loc/**/test_*.py"));
+                        $all_tests[$root]["pytest"] = glob(Filesystem::resolvePath("$test_loc/**/test_*.py"));
                     }
                 }
             }
@@ -42,6 +42,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         $affected_tests = array();
 
         foreach ($paths as $path) {
+            print("path     $path\n");
             $absolute_path = Filesystem::resolvePath($path);
 
             if (is_dir($absolute_path)) {
@@ -53,26 +54,31 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
             }
 
             if (is_readable($absolute_path)) {
+                print("readable\n");
                 $path_resolved = false;
 
                 $filename = basename($path);
                 $directory = dirname($path);
 
                 foreach ($roots as $root => $testers) {
-                    $pos = strpos($path, $root);
-                    if ( $pos === 0) {
+                    print("root '$root'\n");
+                    if ( $root == "." || strpos($path, $root) === 0) {
+                        print("z\n");
                         foreach ($testers as $test_loc) {
                             if ( $test_loc == "doctests" ) {
                                 if(substr($path, -3) == '.py') {
                                     $affected_tests[$root]["doctests"][] = $absolute_path;
                                 }
                             } else {
-                                $rel_dir = substr($directory, strlen($root));
+                                print("$root ... $test_loc ... $path\n");
+                                $rel_dir = ($root !== "." ? substr($directory, strlen($root)) : $directory);
+                                print("rel_dir  $rel_dir\n");
+                  
                                 $test_path = $test_loc . $rel_dir . '/test_' . $filename;
 
                                 $absolute_test_path = Filesystem::resolvePath($test_path);
                                 if (is_readable($absolute_test_path)) {
-                                    $affected_tests[$root]["nosetests"][] = $absolute_test_path;
+                                    $affected_tests[$root]["pytest"][] = $absolute_test_path;
                                 }
                             }
                         }
@@ -121,6 +127,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
                     break;
                 case 'py.test':
                 case 'pytest':
+                    $future = $this->buildPytestFuture($test_path, $xunit_tmp, $cover_tmp, $source_path);
                     break;
                 case 'doctests':
                     $future = $this->buildDoctestsFuture($test_path, $xunit_tmp, $cover_tmp, $source_path);
@@ -162,6 +169,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
 
         return array_mergev($results);
     }
+
     public function buildDoctestsFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
     {
         $cmd_line = csprintf("pytest --junit-xml=%s ", $xunit_tmp);
@@ -171,6 +179,21 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         }
 
         return new ExecFuture('%C --doctest-modules %s', $cmd_line, $path);
+    }
+
+    public function buildPytestFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
+    {
+        $cmd_line = csprintf("pytest --junit-xml=%s ", $xunit_tmp);
+
+        $root = $this->getWorkingCopy()->getProjectRoot();
+        $coveragerc = $root . "/.coveragerc";
+
+        if ($this->getEnableCoverage() !== false) {
+            $cmd_line .= csprintf('--cov-config=%s --cov-report xml:%s --cov=%s',
+                                  $coveragerc, $cover_tmp, $cover_package);
+        }
+
+        return new ExecFuture('%C %s', $cmd_line, $path);
     }
 
     public function buildNoseTestFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
