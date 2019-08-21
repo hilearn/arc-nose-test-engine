@@ -41,6 +41,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
             $absolute_path = Filesystem::resolvePath($path);
 
             if (is_dir($absolute_path)) {
+                # TODO: Not sure what this does.
                 $absolute_test_path = Filesystem::resolvePath('tests/' . $path);
                 if (is_readable($absolute_test_path)) {
                     $affected_tests[] = $absolute_test_path;
@@ -60,7 +61,9 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
                         $test_path = $root . '/tests' . $rel_dir . '/test_' . $filename;
                         $absolute_test_path = Filesystem::resolvePath($test_path);
 
-                        $affected_tests[$root][] = $absolute_test_path;
+                        if (is_readable($absolute_test_path)) {
+                            $affected_tests[$root][] = $absolute_test_path;
+                        }
                         break;
                     }
                     
@@ -96,7 +99,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
             $xunit_tmp = new TempFile();
             $cover_tmp = new TempFile();
 
-            $future = $this->buildTestFuture($test_path, $xunit_tmp, $cover_tmp, $source_path);
+            $future = $this->buildNoseTestFuture($test_path, $xunit_tmp, $cover_tmp, $source_path);
 
             $futures[$test_path] = $future;
             $tmpfiles[$test_path] = array(
@@ -130,7 +133,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         return array_mergev($results);
     }
 
-    public function buildTestFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
+    public function buildNoseTestFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
     {
 
         $cmd_line = csprintf(
@@ -148,8 +151,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
 
     public function parseTestResults($source_path, $xunit_tmp, $cover_tmp)
     {
-        $results = $this->parser->parseTestResults(
-            Filesystem::readFile($xunit_tmp));
+        $results = $this->parser->parseTestResults(Filesystem::readFile($xunit_tmp));
 
         // coverage is for all testcases in the executed $path
         if ($this->getEnableCoverage() !== false) {
