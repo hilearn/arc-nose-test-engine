@@ -9,10 +9,10 @@
 phutil_register_library_map(array(
   '__library_version__' => 2,
   'class' => array(
-    'NoseTestEngine' => 'engine/NoseTestEngine.php',
+    'PythonMultiTestEngine' => 'engine/PythonMultiTestEngine.php',
   ),
   'function' => array(),
   'xmap' => array(
-    'NoseTestEngine' => 'ArcanistUnitTestEngine',
+    'PythonMultiTestEngine' => 'ArcanistUnitTestEngine',
   ),
 ));

@@ -1,3 +1,3 @@
 <?php
 
-phutil_register_library('nose-test-engine', __FILE__);
+phutil_register_library('python-multi-test-engine', __FILE__);
