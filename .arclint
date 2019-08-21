@@ -1,0 +1,8 @@
+{
+  "linters": {
+    "php": {
+      "include": "(^engine/.*\\.php$)",
+      "type": "php"
+    }
+  }
+}

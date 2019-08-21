@@ -1,9 +1,8 @@
 <?php
 
 /**
- * Basic 'nose' unit test engine wrapper.
- *
- * Works with 1.3.7
+ * Python Unit test wrapper that works with pytest 5.1.1
+ * Allows testing with doctests as well.
  */
 final class PythonMultiTestEngine extends ArcanistUnitTestEngine
 {
