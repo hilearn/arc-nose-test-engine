@@ -89,10 +89,6 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         foreach ($test_paths as $root => $tests) {
             foreach ($tests as $runner => $paths) {
                 $results = $this->runTests($paths, $root, $runner);
-                // print(">> $runner\n");
-                // foreach ($paths as $p) {
-                //     print("$p\n");
-                // }
                 $all_results = array_merge($all_results, $results);
             }
         }
@@ -115,9 +111,6 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
             $cover_tmp = new TempFile();
 
             switch ($runner) {
-                case 'nosetests':
-                    $future = $this->buildNoseTestFuture($test_path, $xunit_tmp, $cover_tmp, $source_path);
-                    break;
                 case 'py.test':
                 case 'pytest':
                     $future = $this->buildPytestFuture($test_path, $xunit_tmp, $cover_tmp, $source_path);
@@ -168,7 +161,13 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         $cmd_line = csprintf("PYTHONPATH='.' pytest --junit-xml=%s ", $xunit_tmp);
 
         if ($this->getEnableCoverage() !== false) {
-            $cmd_line .= csprintf('--cov-report xml:%s --cov=%s', $cover_tmp, $cover_package);
+            $cmd_line .= csprintf('--cov-report xml:%s --cov=.', $cover_tmp);
+        }
+
+        $coveragerc = $this->getWorkingCopy()->getProjectRoot() . "/.coveragerc";
+        $absolute_rc = Filesystem::resolvePath($coveragerc);
+        if (is_readable($absolute_rc)) {
+            $cmd_line .= csprintf(' --cov-config=%s', $coveragerc);
         }
 
         return new ExecFuture('%C --doctest-modules %s', $cmd_line, $path);
@@ -178,28 +177,15 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
     {
         $cmd_line = csprintf("PYTHONPATH='.' pytest --junit-xml=%s ", $xunit_tmp);
 
-        $root = $this->getWorkingCopy()->getProjectRoot();
-        $coveragerc = $root . "/.coveragerc";
-
         if ($this->getEnableCoverage() !== false) {
-            $cmd_line .= csprintf('--cov-config=%s --cov-report xml:%s --cov=%s',
-                                  $coveragerc, $cover_tmp, $cover_package);
+            $cmd_line .= csprintf('--cov-report xml:%s --cov=.', $cover_tmp);
         }
 
-        return new ExecFuture('%C %s', $cmd_line, $path);
-    }
+        $coveragerc = $this->getWorkingCopy()->getProjectRoot() . "/.coveragerc";
 
-    public function buildNoseTestFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
-    {
-
-        $cmd_line = csprintf(
-            'nosetests --with-xunit --xunit-file=%s',
-            $xunit_tmp);
-
-        if ($this->getEnableCoverage() !== false) {
-            $cmd_line .= csprintf(
-                ' --with-coverage --cover-xml --cover-xml-file=%s --cover-package=%s',
-                $cover_tmp, $cover_package);
+        $absolute_rc = Filesystem::resolvePath($coveragerc);
+        if (is_readable($absolute_rc)) {
+            $cmd_line .= csprintf(' --cov-config=%s', $coveragerc);
         }
 
         return new ExecFuture('%C %s', $cmd_line, $path);
