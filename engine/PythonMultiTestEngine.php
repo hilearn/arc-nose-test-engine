@@ -16,6 +16,11 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
 
     public function run()
     {
+        # chdir to project root, so that `arc unit` will work from child
+        # directories as well.
+        $project_root = $this->getWorkingCopy()->getProjectRoot();
+        chdir($project_root);
+
         $cm = $this->getConfigurationManager();
         $roots = $cm->getConfigFromAnySource("unit.engine.roots");
 
