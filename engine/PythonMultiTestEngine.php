@@ -16,12 +16,19 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
 
     public function run()
     {
+        $cm = $this->getConfigurationManager();
+
+        # Add Environment Variables from arcconfig
+        $environment = $cm->getConfigFromAnySource("unit.engine.environment");
+        foreach ($environment as $key => $value) {
+            putenv("$key=$value");
+        }
+
         # chdir to project root, so that `arc unit` will work from child
         # directories as well.
         $project_root = $this->getWorkingCopy()->getProjectRoot();
         chdir($project_root);
 
-        $cm = $this->getConfigurationManager();
         $roots = $cm->getConfigFromAnySource("unit.engine.roots");
 
         # Erase outdated coverage so there are no exceptions when reporting it.
