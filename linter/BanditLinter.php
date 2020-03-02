@@ -42,7 +42,7 @@ final class BanditLinter extends ArcanistExternalLinter {
   public function getLintSeverityMap() {
     return [
         'LOW' => ArcanistLintSeverity::SEVERITY_ADVICE,
-        'MEDIUM' => ArcanistLintSeverity::SEVERITY_WARNING,
+        'MEDIUM' => ArcanistLintSeverity::SEVERITY_ERROR,
         'HIGH' => ArcanistLintSeverity::SEVERITY_ERROR
     ];
   }
