@@ -24,6 +24,10 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
             putenv("$key=$value");
         }
 
+        if (!getenv('PYTHONPATH')) {
+            putenv("PYTHONPATH=.");
+        }
+
         # chdir to project root, so that `arc unit` will work from child
         # directories as well.
         $project_root = $this->getWorkingCopy()->getProjectRoot();
@@ -170,7 +174,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
 
     public function buildDoctestsFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
     {
-        $cmd_line = csprintf("PYTHONPATH='.' pytest --junit-xml=%s ", $xunit_tmp);
+        $cmd_line = csprintf("pytest --junit-xml=%s ", $xunit_tmp);
 
         if ($this->getEnableCoverage() !== false) {
             $cmd_line .= csprintf('--cov-report xml:%s --cov=.', $cover_tmp);
@@ -187,7 +191,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
 
     public function buildPytestFuture($path, $xunit_tmp, $cover_tmp, $cover_package)
     {
-        $cmd_line = csprintf("PYTHONPATH='.' pytest --junit-xml=%s ", $xunit_tmp);
+        $cmd_line = csprintf("pytest --junit-xml=%s ", $xunit_tmp);
 
         if ($this->getEnableCoverage() !== false) {
             $cmd_line .= csprintf('--cov-report xml:%s --cov=.', $cover_tmp);

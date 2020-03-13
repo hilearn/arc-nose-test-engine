@@ -10,11 +10,13 @@ phutil_register_library_map(array(
   '__library_version__' => 2,
   'class' => array(
     'BanditLinter' => 'linter/BanditLinter.php',
+    'DotnetUnitTestEngine' => 'engine/DotnetUnitTestEngine.php',
     'PythonMultiTestEngine' => 'engine/PythonMultiTestEngine.php',
   ),
   'function' => array(),
   'xmap' => array(
     'BanditLinter' => 'ArcanistExternalLinter',
+    'DotnetUnitTestEngine' => 'ArcanistUnitTestEngine',
     'PythonMultiTestEngine' => 'ArcanistUnitTestEngine',
   ),
 ));
