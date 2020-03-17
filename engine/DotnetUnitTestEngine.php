@@ -25,7 +25,7 @@ class DotnetUnitTestEngine extends ArcanistUnitTestEngine {
         $this->projectRoot = $this->getWorkingCopy()->getProjectRoot();
 
         $this->paths = $this->getConfigurationManager()->getConfigFromAnySource(
-            'unit.engine.paths');
+            'unit.engine.csharp.paths');
 
         $this->testEngine = 'dotnet';
     }
@@ -194,3 +194,4 @@ class DotnetUnitTestEngine extends ArcanistUnitTestEngine {
     }
 
 }
+

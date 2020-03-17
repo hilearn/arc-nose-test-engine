@@ -19,7 +19,9 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         $cm = $this->getConfigurationManager();
 
         # Add Environment Variables from arcconfig
-        $environment = $cm->getConfigFromAnySource("unit.engine.environment");
+        $environment = $cm->getConfigFromAnySource("unit.engine.python.environment",
+                    ['PYTHONPATH' => '.']);
+
         foreach ($environment as $key => $value) {
             putenv("$key=$value");
         }
@@ -33,7 +35,7 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         $project_root = $this->getWorkingCopy()->getProjectRoot();
         chdir($project_root);
 
-        $roots = $cm->getConfigFromAnySource("unit.engine.roots");
+        $roots = $cm->getConfigFromAnySource("unit.engine.python.roots");
 
         # Erase outdated coverage so there are no exceptions when reporting it.
         (new ExecFuture('coverage erase'))->resolvex();
