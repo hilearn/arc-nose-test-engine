@@ -18,7 +18,8 @@ For `python` project
   "phabricator.uri" : "https://example_url",
   "unit.engine": "PythonMultiTestEngine",
   "unit.engine.python.environment": {
-    "VAR_NAME": "value_in_env"
+    "VAR_NAME": "value_in_env",
+    "PATH_VAR_NAME": [".", "path_value_in_env"]
   },
   "unit.engine.python.roots": {
     "root_dir": ["tests_path/"]

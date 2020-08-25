@@ -22,9 +22,14 @@ final class PythonMultiTestEngine extends ArcanistUnitTestEngine
         $environment = $cm->getConfigFromAnySource("unit.engine.python.environment",
                     ['PYTHONPATH' => '.']);
 
-        foreach ($environment as $key => $value) {
-            putenv("$key=$value");
-        }
+        foreach ($environment as $key => $value) {			
+			if (is_array($value)) {	
+				$delimiter = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ? ";" : ":");
+				putenv("$key=" . implode($delimiter, $value));
+			}
+			else
+				putenv("$key=$value");
+        }		
 
         if (!getenv('PYTHONPATH')) {
             putenv("PYTHONPATH=.");
